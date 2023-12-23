@@ -1,7 +1,7 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
-//const { employee, department } = require('./db/schema.sql')
 
+//creates connection to the database
 const db = mysql.createConnection(
     {
         host: 'localhost',
@@ -40,13 +40,22 @@ function startPrompt() {
                         {
                             name: "newDepartmentName",
                             type: "input",
-                            message: "What is the name of the department?",
+                            message: "Enter the name of the department",
                         },
                     ])
                         .then((departmentName) => {
                             const { newDepartmentName } = departmentName
-                            console.log(`You are about to add a new Department: ${newDepartmentName}`)
-
+                            db.query('INSERT INTO department SET ?', {
+                                name: departmentName.newDepartmentName,
+                            }, (err, results) => {
+                                if (err) {
+                                    console.log(err)
+                                } else {
+                                    console.log("New department was added.")
+                                }
+                                startPrompt()
+                            }
+                            )
                         });
                     break;
                 case 'Add Employee':
@@ -112,7 +121,17 @@ function startPrompt() {
                         .then((roleAnswer) => {
                             const { newRole } = roleAnswer
                             console.log(`You are about to add a new role: ${newRole}`)
-
+                            db.query('INSERT INTO role SET ?', {
+                                title: roleAnswer.newRole,
+                            }, (err, results) => {
+                                if (err) {
+                                    console.log(err)
+                                } else {
+                                    console.log("New role was added.")
+                                }
+                                startPrompt()
+                            }
+                            )
                         });
                     break;
                 case 'View ALL Employees':
@@ -124,6 +143,12 @@ function startPrompt() {
                 case 'View All Departments':
                     db.query('SELECT * FROM department', function (err, results) {
                         console.table(results);
+                        startPrompt()
+                    });
+                    break;
+                case 'View ALL Roles':
+                    db.query(`SELECT * FROM role`, function (err, allRoles){
+                        console.table(allRoles);
                         startPrompt()
                     });
                     break;
@@ -147,7 +172,6 @@ function startPrompt() {
                                 }
 
                             ])
-
                                 .then(updateRoleAnswer => {
                                     const { employeeName, newRoleName } = updateRoleAnswer;
                                     db.query(` UPDATE employee SET role_id=? WHERE id=?`, [newRoleName, employeeName], (err, result) => {
@@ -157,6 +181,9 @@ function startPrompt() {
                                 })
                         })
                     });
+                    break;
+                    case'Quit':
+                    db.end()
                     break;
                 default:
                     break;
