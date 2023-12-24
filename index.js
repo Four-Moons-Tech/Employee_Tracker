@@ -111,28 +111,46 @@ function startPrompt() {
                     })
                     break;
                 case 'Add Role':
-                    inquirer.prompt([
-                        {
-                            name: "newRole",
-                            type: "input",
-                            message: "What is the name of the role?",
-                        },
-                    ])
-                        .then((roleAnswer) => {
-                            const { newRole } = roleAnswer
-                            console.log(`You are about to add a new role: ${newRole}`)
-                            db.query('INSERT INTO role SET ?', {
-                                title: roleAnswer.newRole,
-                            }, (err, results) => {
-                                if (err) {
-                                    console.log(err)
-                                } else {
-                                    console.log("New role was added.")
+                    db.query(` SELECT * FROM department`, (err, departmentData) => {
+                        let departmentArray = departmentData.map(department => ({ name: department.name, value: department.id }))
+
+                        inquirer.prompt([
+                            {
+                                name: "newRole",
+                                type: "input",
+                                message: "What is the name of the role?",
+                            },
+                            {
+                                name: "chooseDepartment",
+                                type: "list",
+                                message: "Choose department",
+                                choices: departmentArray
+                            },
+                            {
+                                name: "newRoleSalary",
+                                type: "input",
+                                message: "Enter salary for new role",
+                            },
+                        ])
+
+                            .then((roleAnswer) => {
+                                const { newRole, newRoleSalary,chooseDepartment } = roleAnswer
+                                console.log(`You are about to add a new role: ${newRole} with the salary of ${newRoleSalary}`)
+                                db.query('INSERT INTO role SET ?', {
+                                    title: roleAnswer.newRole,
+                                    salary: roleAnswer.newRoleSalary,
+                                    department_id:roleAnswer.chooseDepartment,
+                                }, (err, results) => {
+                                    if (err) {
+                                        console.log(err)
+                                    } else {
+                                        console.log("New role was added.")
+                                    }
+                                    startPrompt()
                                 }
-                                startPrompt()
-                            }
-                            )
-                        });
+                                )
+                            })
+                    })
                     break;
                 case 'View ALL Employees':
                     db.query('SELECT employee.id,employee.first_name,employee.last_name,role.title,CONCAT(manager.first_name," ", manager.last_name ) AS Manager FROM employee JOIN role ON role.id=employee.role_id JOIN employee manager ON manager.id= employee.manager_id;', function (err, results) {
@@ -147,7 +165,7 @@ function startPrompt() {
                     });
                     break;
                 case 'View ALL Roles':
-                    db.query(`SELECT * FROM role`, function (err, allRoles){
+                    db.query(`SELECT * FROM role`, function (err, allRoles) {
                         console.table(allRoles);
                         startPrompt()
                     });
@@ -182,7 +200,7 @@ function startPrompt() {
                         })
                     });
                     break;
-                    case'Quit':
+                case 'Quit':
                     db.end()
                     break;
                 default:
